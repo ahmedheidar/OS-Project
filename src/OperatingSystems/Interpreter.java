@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.*;
+import java.util.Map.Entry;
 
 
 public class Interpreter {
@@ -16,111 +18,186 @@ public class Interpreter {
     static Queue<String> readyQueue = new LinkedList<>();
     static Queue<String> blockedQueue = new LinkedList<>();
     //Add the programs to the hashMap
-    static HashMap<Integer, String> programs = new HashMap<Integer, String>() {{
-        put(1, "Program_1.txt");
-        put(2, "Program_2.txt");
-        put(3, "Program_3.txt");
+    static HashMap<Integer, Pair> programs = new HashMap<Integer, Pair>() {
+        {
+            put(1, new Pair("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_1", 0));
+            put(2, new Pair("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_2", 0));
+            put(3, new Pair("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_3", 0));
+        }
+
+    };
+
+    static HashMap<Integer, ArrayList<Pair>> programVariables = new HashMap<Integer, ArrayList<Pair>>() {{
+        put(1, new ArrayList<Pair>());
+        put(2, new ArrayList<Pair>());
+        put(3, new ArrayList<Pair>());
+
     }};
-    //Make static variables
+    static boolean isRunning;
 
-
-    public static void print(String a) {
-        if (Mutex.semWait("print")) {
-            System.out.println("The Value of the first value is: " + a);
-        } else {
-            //blockedQueue;
-        }
+    public static Queue<String> getReadyQueue() {
+        return readyQueue;
     }
 
-
-    public static int assign(int x, int y) {
-        if (Mutex.semWait("assign")) {
-            x = y;
-            return x;
-        } else {
-//            blockedQueue.add();
-        }
-        return 0;
+    public static Queue<String> getBlockedQueue() {
+        return blockedQueue;
     }
 
-    public static void assign(String x, String y, int id, boolean flag) {
-        if (flag == false) {
-            if (!Mutex.semWait("userInput")) {
-                blockedQueue.add(programs.get(id));
-            } else {
-                x = y;
-
-            }
-        } else {
-            x = y;
-        }
+    public static void assign(Object x, Object y, int id, boolean flag, int i) {
+        programVariables.get(id).add(new Pair((String) x, y));
 
     }
 
-    public void readProgram(String Program, int id) throws IOException {
-        String[] terms = Program.trim().split("\\s+");
-        int i = 0;
+    public static void print(Object a, int id) {
+        if (!Mutex.semWait("userOutput", id)) {
+            Mutex.getUserOutputBlockedQueue().add(programs.get(id).variable);
+            blockedQueue.add(programs.get(id).variable);
+
+            return;
+        }
+        if (a instanceof Integer) {
+            System.out.println("This is the printed integer result " + a);
+        } else System.out.println("This is the printed string result " + a);
+    }
+
+    public static void main(String[] args) throws IOException {
+        String x = readFile("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_1", 1);
+        System.out.println(x);
+        String[] s = {"/Users/robertojoseph/Desktop/OS_22_Project 2/Program_1"};
+//        runProgram(s);
+        System.out.println(programVariables.get(1));
+
+
+    }
+
+
+    public static HashMap<Integer, Pair> getPrograms() {
+        return programs;
+    }
+
+    public static HashMap<Integer, ArrayList<Pair>> getProgramVariables() {
+        return programVariables;
+    }
+
+    public static void readProgram(String Program, int id) throws IOException {
+        isRunning = true;
+        String result = readFile(Program, id);
+        String[] terms = result.trim().split("\\s+");
+        int i = (int) programs.get(id).value;
         while (i < terms.length) {
             switch (terms[i]) {
+
                 case "semWait":
-                    if (Mutex.semWait(terms[i + 1])) {
+                    Scheduler.counter++;
+                    if (Mutex.semWait(terms[i + 1], id)) {
                     } else {
-                        blockedQueue.add(programs.get(id));
+                        programs.get(id).value = i;
+                        blockedQueue.add(programs.get(id).variable);
                     }
                     break;
                 case "assign":
+                    Scheduler.counter++;
                     String firstParams = terms[i + 1];
                     String secondParams = terms[i + 2];
                     if (secondParams.equals("readFile")) {
                         String fourthInput = terms[i + 3];
                         String readResult = readFile(fourthInput, id);
                         if (!readResult.equals("The resource is blocked")) {
-                            assign(firstParams, readResult, id, true);
+                            assign(firstParams, readResult, id, true, i);
                         }
                     } else if (secondParams.equals("input")) {
                         Scanner sc = new Scanner(System.in);
-                        assign(firstParams, sc.next(), id, false);
+                        assign(firstParams, sc.next(), id, false, i);
                     } else {
-                        assign(firstParams, secondParams, id, true);
+                        assign(firstParams, secondParams, id, true, i);
                     }
 
+                    break;
+                case "semSignal":
+                    Scheduler.counter++;
+                    Mutex.semSignal(terms[i + 1]);
+                    break;
 
+                case "writeFile":
+                    Scheduler.counter++;
+                    writeFile(terms[i + 1], terms[i + 2], id);
+                    break;
+
+
+                case "print":
+                    Scheduler.counter++;
+                    print(terms[i + 1], id);
+                    break;
+                case "printFromTo":
+                    Scheduler.counter++;
+                    printFromTo(Integer.parseInt(terms[i + 1]), Integer.parseInt(terms[i + 2]), id);
+                    break;
+
+            }
+            i++;
+
+        }
+        isRunning = false;
+    }
+
+    public static void runProgram(String programName) throws IOException {
+
+        if (!isRunning) {
+            for (Integer key : programs.keySet()) {
+                if (programs.get(key).variable == programName) {
+                    readProgram(programName, key);
+                    break;
+                }
             }
         }
     }
 
+    public static void setAllPrograms(String[] programs) throws IOException {
+        Scheduler.scheduler(programs);
 
-    public String readFile(String argument, int id) throws IOException {
-        if (!Mutex.semWait("file")) {
-            blockedQueue.add(programs.get(id));
-        } else {
+    }
 
-            String filePath = argument;
-            filePath += ".txt"; //Program.txt
-            BufferedReader reader = new BufferedReader(new FileReader(filePath));
-            StringBuilder stringBuilder = new StringBuilder();
-            String line;
-            //assign
-            //print
-            //Null
-            while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line);
-                stringBuilder.append("\n");
-            }
-            // delete the last new line separator
-            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-            reader.close();
-            return stringBuilder.toString();
+    public static String readFile(String argument, int id) throws IOException {
+
+        String filePath = argument;
+        filePath += ".txt"; //Program.txt
+        BufferedReader reader = new BufferedReader(new FileReader(filePath));
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
+        //assign
+        //print
+        //Null
+        while ((line = reader.readLine()) != null) {
+            stringBuilder.append(line);
+            stringBuilder.append("\n");
         }
-        return "The resource is blocked";
+        // delete the last new line separator
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        reader.close();
+        return stringBuilder.toString();
+
     }
 
 
-    public void writeFile(String filePath, String value) throws IOException {
+    public static void writeFile(String filePath, String value, int id) throws IOException {
         try {
-            FileWriter newWriter = new FileWriter(filePath + "" + ".txt");
-            newWriter.write(value);
-            newWriter.close();
+            if (!Mutex.semWait("file", id)) {
+                Mutex.getFileBlockedQueue().add(programs.get(id).variable);
+                blockedQueue.add(programs.get(id).variable);
+            } else {
+                ArrayList<Pair> result = programVariables.get(id);
+                for (int i = 0; i < result.size(); i++) {
+                    if (result.get(i).variable == filePath) {
+                        Object x = programVariables.get(id).get(i).value;
+                        programVariables.get(id).get(i).value = x + value;
+                        break;
+                    }
+                }
+                FileWriter newWriter = new FileWriter(filePath + "" + ".txt");
+                newWriter.write(value);
+                newWriter.close();
+                Mutex.semWait("file", id);
+            }
 
         } catch (IOException e) {
             System.out.println("An error occurred");
@@ -129,21 +206,24 @@ public class Interpreter {
     }
 
 
-    public static void print(int a) {
-        System.out.println("The Value of the first value is: " + a);
+//    public static void print(int a) {
+//        System.out.println("The Value of the first value is: " + a);
+//
+//    }
 
-    }
+    public static void printFromTo(int a, int b, int id) {
+        if (!Mutex.semWait("userOutput", id)) {
+            Mutex.getUserOutputBlockedQueue().add(programs.get(id).variable);
 
-    public static void printFromTo(int a, int b) {
-        a++;
-        while (a < b) {
-            System.out.print(a + " ");
+            blockedQueue.add(programs.get(id).variable);
+        } else {
             a++;
+            while (a < b) {
+                System.out.print(a + " ");
+                a++;
+            }
         }
     }
 
-    public static void main(String[] args) {
-
-    }
 
 }
