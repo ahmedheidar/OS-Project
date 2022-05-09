@@ -5,76 +5,91 @@ import java.util.Objects;
 
 public class Scheduler {
 
-    static int time=-1;
-    static int counter;
+    int time = -1;
+    int counter;
 
     static String currentProgram = "";
 
-    public static int getCounter() {
+    public Scheduler() {
+
+    }
+
+    public int getCounter() {
         return counter;
     }
 
-    public static void setCounter(int counter) {
-        Scheduler.counter = counter;
+    public void setCounter(int counter) {
+        this.counter = counter;
     }
 
-    public static void setTime(int time) {
-        Scheduler.time = time;
+    public void setTime(int time) {
+        this.time = time;
     }
 
-    public static int getTime() {
+    public int getTime() {
         return time;
     }
 
-    public static void scheduler(String[] programs) throws IOException {
-        int programID;
+    public void scheduler(String[] programs, Interpreter interpreter, int id) throws IOException {
         while (true) {
-            for(String s : Interpreter.getReadyQueue()){
+            for (String s : interpreter.getReadyQueue()) {
                 System.out.println(s);
             }
             time++;
             if (time == 0) {
-                Interpreter.getReadyQueue().add(programs[0]);
+                interpreter.getReadyQueue().add(programs[0]);
             } else if (time == 1) {
-                Interpreter.getReadyQueue().add(programs[1]);
+                interpreter.getReadyQueue().add(programs[1]);
 
             } else if (time == 4) {
-                Interpreter.getReadyQueue().add(programs[2]);
+                interpreter.getReadyQueue().add(programs[2]);
             }
-                    //TODO runProgram and see its counter
+            //TODO runProgram and see its counter
             boolean finished = false;
-            for (Integer key : Interpreter.getPrograms().keySet()) {
-                if (Objects.equals(Interpreter.getPrograms().get(key).variable, currentProgram)) {
-                    if ((int) Interpreter.getPrograms().get(key).value >= Interpreter.currentFileLines - 1) {
-                        counter=0;
-                        currentProgram = Interpreter.getReadyQueue().peek();
-                        Interpreter.runProgram(Interpreter.getReadyQueue().poll());
-                        finished= true;
+            if (id != 0) {
+                if (Objects.equals(interpreter.getPrograms().get(id).variable, currentProgram)) {
+                    System.out.println("Variable is : " + interpreter.getPrograms().get(id).variable);
+                    System.out.println("CurrentProgram is : " + currentProgram);
+                    if ((int) interpreter.getPrograms().get(id).value > interpreter.currentFileLines - 1) {
+                        System.out.println(interpreter.getPrograms().get(id).value + " " + "Current files" + (interpreter.currentFileLines - 1));
                     }
+                    if ((int) interpreter.getPrograms().get(id).value >= interpreter.currentFileLines) {
+                        counter = 0;
+                        if (!interpreter.getReadyQueue().isEmpty()) {
+                            currentProgram = interpreter.getReadyQueue().peek();
+                            interpreter.runProgram(interpreter.getReadyQueue().poll());
+
+                        }
+                        finished = true;
+                    }
+
                 }
             }
-            if(counter==2){
-                Interpreter.isRunning=false;
-                if(!finished){
-                    Interpreter.getReadyQueue().add(currentProgram);
+
+
+            if (counter == 2) {
+                interpreter.isRunning = false;
+                if (!finished) {
+                    interpreter.getReadyQueue().add(currentProgram);
                 }
-                currentProgram="";
+                currentProgram = "";
+
 
             }
-            if (!Interpreter.isRunning && !Interpreter.getReadyQueue().isEmpty()) {
-                counter=0;
-                currentProgram = Interpreter.getReadyQueue().peek();
-                Interpreter.runProgram(Interpreter.getReadyQueue().poll());
+            if (!interpreter.isRunning && !interpreter.getReadyQueue().isEmpty()) {
+                counter = 0;
+                currentProgram = interpreter.getReadyQueue().peek();
+                interpreter.runProgram(interpreter.getReadyQueue().poll());
+
             }
-            if(!Interpreter.isRunning && Interpreter.getReadyQueue().isEmpty() && Interpreter.getBlockedQueue().isEmpty()){
+            if (!interpreter.isRunning && interpreter.getReadyQueue().isEmpty() && interpreter.getBlockedQueue().isEmpty()) {
                 break;
             }
-            if(Interpreter.isRunning){
-                Interpreter.runProgram(currentProgram);
+            if (interpreter.isRunning) {
+                interpreter.runProgram(currentProgram);
             }
+
 
         }
     }
 }
-
-

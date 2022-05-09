@@ -4,39 +4,45 @@ import java.util.*;
 
 public class Mutex {
 
-    static int printKey = 1;
-    static int assignKey = 1;
-    static int readAndWriteFileKey = 1;
-    static Queue<String> userOutputBlockedQueue = new LinkedList<>();
-    static Queue<String> userInputBlockedQueue = new LinkedList<>();
-    static Queue<String> fileBlockedQueue = new LinkedList<>();
+    int printKey = 1;
+    int assignKey = 1;
+    int readAndWriteFileKey = 1;
+    Queue<String> userOutputBlockedQueue;
+    Queue<String> userInputBlockedQueue;
+    Queue<String> fileBlockedQueue;
 
-    public static Queue<String> getUserOutputBlockedQueue() {
+    public Mutex() {
+        userOutputBlockedQueue = new LinkedList<>();
+        userInputBlockedQueue = new LinkedList<>();
+        fileBlockedQueue = new LinkedList<>();
+    }
+
+    public Queue<String> getUserOutputBlockedQueue() {
         return userOutputBlockedQueue;
     }
 
-    public static void setUserOutputBlockedQueue(Queue<String> userOutputBlockedQueue) {
-        Mutex.userOutputBlockedQueue = userOutputBlockedQueue;
+    public void setUserOutputBlockedQueue(Queue<String> userOutputBlockedQueue) {
+        this.userOutputBlockedQueue = userOutputBlockedQueue;
     }
 
-    public static void setUserInputBlockedQueue(Queue<String> userInputBlockedQueue) {
-        Mutex.userInputBlockedQueue = userInputBlockedQueue;
+    public void setUserInputBlockedQueue(Queue<String> userInputBlockedQueue) {
+        this.userInputBlockedQueue = userInputBlockedQueue;
     }
 
-    public static void setFileBlockedQueue(Queue<String> fileBlockedQueue) {
-        Mutex.fileBlockedQueue = fileBlockedQueue;
+    public void setFileBlockedQueue(Queue<String> fileBlockedQueue) {
+        this.fileBlockedQueue = fileBlockedQueue;
     }
 
-    public static Queue<String> getUserInputBlockedQueue() {
+    public Queue<String> getUserInputBlockedQueue() {
         return userInputBlockedQueue;
     }
 
-    public static Queue<String> getFileBlockedQueue() {
+    public Queue<String> getFileBlockedQueue() {
         return fileBlockedQueue;
     }
 
 
-    public static boolean semWait(String a, int id) {
+    public boolean semWait(String a, int id, Interpreter interpreter, Scheduler scheduler) {
         String program;
         switch (a) {
             case "userOutput":
@@ -44,11 +50,11 @@ public class Mutex {
                     printKey--;
                     return true;
                 } else {
-                    program = Interpreter.getPrograms().get(id).variable;
+                    program = interpreter.getPrograms().get(id).variable;
                     userOutputBlockedQueue.add(program);
-                    Interpreter.getBlockedQueue().add(program);
-                    Interpreter.isRunning=false;
-                    Scheduler.currentProgram="";
+                    interpreter.getBlockedQueue().add(program);
+                    interpreter.setRunning(false);
+                    Scheduler.currentProgram = "";
                 }
                 break;
 
@@ -57,11 +63,11 @@ public class Mutex {
                     assignKey--;
                     return true;
                 } else {
-                    program = Interpreter.getPrograms().get(id).variable;
+                    program = interpreter.getPrograms().get(id).variable;
                     userInputBlockedQueue.add(program);
-                    Interpreter.getBlockedQueue().add(program);
-                    Interpreter.isRunning=false;
-                    Scheduler.currentProgram="";
+                    interpreter.getBlockedQueue().add(program);
+                    interpreter.setRunning(false);
+                    Scheduler.currentProgram = "";
                 }
                 break;
             case "file":
@@ -69,45 +75,46 @@ public class Mutex {
                     readAndWriteFileKey--;
                     return true;
                 } else {
-                    program = Interpreter.getPrograms().get(id).variable;
+                    program = interpreter.getPrograms().get(id).variable;
                     fileBlockedQueue.add(program);
-                    Interpreter.getBlockedQueue().add(program);
-                    Interpreter.isRunning=false;
-                    Scheduler.currentProgram="";
+                    interpreter.getBlockedQueue().add(program);
+                    interpreter.setRunning(false);
+                    Scheduler.currentProgram = "";
                 }
                 break;
         }
         return false;
-
     }
 
-
-    public static void semSignal(String a) {
+    public void semSignal(String a, Interpreter interpreter) {
         String program;
         switch (a) {
             case "userOuput":
                 printKey++;
                 program = userOutputBlockedQueue.poll();
-                Interpreter.getBlockedQueue().remove();
-                Interpreter.getReadyQueue().add(program);
+                if (!interpreter.getBlockedQueue().isEmpty()) {
+                    interpreter.getBlockedQueue().remove();
+                }
+                interpreter.getReadyQueue().add(program);
                 break;
             case "userInput":
                 assignKey++;
                 program = userInputBlockedQueue.poll();
-                if(!Interpreter.getBlockedQueue().isEmpty()){
-                Interpreter.getBlockedQueue().remove();
+                if (!interpreter.getBlockedQueue().isEmpty()) {
+                    interpreter.getBlockedQueue().remove();
                 }
-                Interpreter.getReadyQueue().add(program);
+                interpreter.getReadyQueue().add(program);
                 break;
 
             case "file":
                 readAndWriteFileKey++;
                 program = fileBlockedQueue.poll();
-                Interpreter.getBlockedQueue().remove();
-                Interpreter.getReadyQueue().add(program);
+                if (!interpreter.getBlockedQueue().isEmpty()) {
+                    interpreter.getBlockedQueue().remove();
+                }
+                interpreter.getReadyQueue().add(program);
                 break;
         }
     }
 
 }
-
