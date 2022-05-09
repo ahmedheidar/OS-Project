@@ -47,6 +47,8 @@ public class Mutex {
                     program = Interpreter.getPrograms().get(id).variable;
                     userOutputBlockedQueue.add(program);
                     Interpreter.getBlockedQueue().add(program);
+                    Interpreter.isRunning=false;
+                    Scheduler.currentProgram="";
                 }
                 break;
 
@@ -58,6 +60,8 @@ public class Mutex {
                     program = Interpreter.getPrograms().get(id).variable;
                     userInputBlockedQueue.add(program);
                     Interpreter.getBlockedQueue().add(program);
+                    Interpreter.isRunning=false;
+                    Scheduler.currentProgram="";
                 }
                 break;
             case "file":
@@ -68,6 +72,8 @@ public class Mutex {
                     program = Interpreter.getPrograms().get(id).variable;
                     fileBlockedQueue.add(program);
                     Interpreter.getBlockedQueue().add(program);
+                    Interpreter.isRunning=false;
+                    Scheduler.currentProgram="";
                 }
                 break;
         }
@@ -88,7 +94,9 @@ public class Mutex {
             case "userInput":
                 assignKey++;
                 program = userInputBlockedQueue.poll();
+                if(!Interpreter.getBlockedQueue().isEmpty()){
                 Interpreter.getBlockedQueue().remove();
+                }
                 Interpreter.getReadyQueue().add(program);
                 break;
 

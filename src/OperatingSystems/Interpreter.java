@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Array;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.*;
@@ -20,9 +21,9 @@ public class Interpreter {
     //Add the programs to the hashMap
     static HashMap<Integer, Pair> programs = new HashMap<Integer, Pair>() {
         {
-            put(1, new Pair("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_1", 0));
-            put(2, new Pair("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_2", 0));
-            put(3, new Pair("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_3", 0));
+            put(1, new Pair("src/Program_1", 0));
+            put(2, new Pair("src/Program_2", 0));
+            put(3, new Pair("src/Program_3", 0));
         }
 
     };
@@ -34,6 +35,9 @@ public class Interpreter {
 
     }};
     static boolean isRunning;
+    static String[] allThePrograms = {"src/Program_1","src/Program_2","src/Program_3"};
+    static int currentFileLines;
+
 
     public static Queue<String> getReadyQueue() {
         return readyQueue;
@@ -61,11 +65,17 @@ public class Interpreter {
     }
 
     public static void main(String[] args) throws IOException {
-        String x = readFile("/Users/robertojoseph/Desktop/OS_22_Project 2/Program_1", 1);
-        System.out.println(x);
-        String[] s = {"/Users/robertojoseph/Desktop/OS_22_Project 2/Program_1"};
+        String x = readFile("src/Program_1", 1);
+//        System.out.println(x);
+//        setAllPrograms(allThePrograms);
 //        runProgram(s);
         System.out.println(programVariables.get(1));
+        String s = readFile("src/Program_1",0);
+        String[] terms = s.trim().split("\\n");
+        System.out.println(Arrays.toString(terms));
+        System.out.println(terms.length);
+
+
 
 
     }
@@ -83,6 +93,9 @@ public class Interpreter {
         isRunning = true;
         String result = readFile(Program, id);
         String[] terms = result.trim().split("\\s+");
+        String[] lines = result.trim().split("\\n");
+        currentFileLines=lines.length;
+
         int i = (int) programs.get(id).value;
         while (i < terms.length) {
             switch (terms[i]) {
@@ -92,7 +105,7 @@ public class Interpreter {
                     if (Mutex.semWait(terms[i + 1], id)) {
                     } else {
                         programs.get(id).value = i;
-                        blockedQueue.add(programs.get(id).variable);
+                        i--;
                     }
                     break;
                 case "assign":
@@ -107,34 +120,42 @@ public class Interpreter {
                         }
                     } else if (secondParams.equals("input")) {
                         Scanner sc = new Scanner(System.in);
+                        System.out.println("Enter a value: ");
                         assign(firstParams, sc.next(), id, false, i);
                     } else {
                         assign(firstParams, secondParams, id, true, i);
                     }
-
+//                    Scheduler.scheduler(allThePrograms);
                     break;
                 case "semSignal":
                     Scheduler.counter++;
                     Mutex.semSignal(terms[i + 1]);
+//                    Scheduler.scheduler(allThePrograms);
                     break;
 
                 case "writeFile":
                     Scheduler.counter++;
                     writeFile(terms[i + 1], terms[i + 2], id);
+//                    Scheduler.scheduler(allThePrograms);
                     break;
 
 
                 case "print":
                     Scheduler.counter++;
                     print(terms[i + 1], id);
+//                    Scheduler.scheduler(allThePrograms);
                     break;
                 case "printFromTo":
                     Scheduler.counter++;
-                    printFromTo(Integer.parseInt(terms[i + 1]), Integer.parseInt(terms[i + 2]), id);
+                    //TODO use the variables of this program not the terms
+                    printFromTo(Integer.parseInt((String) programVariables.get(id).get(0).value) , Integer.parseInt((String) programVariables.get(id).get(1).value) , id);
+//                    Scheduler.scheduler(allThePrograms);
                     break;
 
             }
             i++;
+            programs.get(id).value=i;
+            Scheduler.scheduler(allThePrograms);
 
         }
         isRunning = false;
@@ -142,12 +163,11 @@ public class Interpreter {
 
     public static void runProgram(String programName) throws IOException {
 
-        if (!isRunning) {
             for (Integer key : programs.keySet()) {
                 if (programs.get(key).variable == programName) {
                     readProgram(programName, key);
                     break;
-                }
+
             }
         }
     }
@@ -212,17 +232,12 @@ public class Interpreter {
 //    }
 
     public static void printFromTo(int a, int b, int id) {
-        if (!Mutex.semWait("userOutput", id)) {
-            Mutex.getUserOutputBlockedQueue().add(programs.get(id).variable);
-
-            blockedQueue.add(programs.get(id).variable);
-        } else {
             a++;
             while (a < b) {
                 System.out.print(a + " ");
                 a++;
             }
-        }
+
     }
 
 
