@@ -1,7 +1,16 @@
+<<<<<<< HEAD
 semWait userInput
 assign a input
 assign b input
 semSignal userInput
 semWait userOutput
 printFromTo a b
+=======
+semWait userInput
+assign a input
+assign b input
+semSignal userInput
+semWait userOutput
+printFromTo a b
+>>>>>>> 8473b08 (refactor code & added codes to schedular)
 semSignal userOutput

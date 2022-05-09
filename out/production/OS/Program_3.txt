@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 semWait userInput
 assign a input
 semSignal userInput
@@ -6,4 +7,14 @@ assign b readFile a
 semSignal file
 semWait userOutput
 print b
+=======
+semWait userInput
+assign a input
+semSignal userInput
+semWait file
+assign b readFile a
+semSignal file
+semWait userOutput
+print b
+>>>>>>> 8473b08 (refactor code & added codes to schedular)
 semSignal userOutput
