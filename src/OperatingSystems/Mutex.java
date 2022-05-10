@@ -89,30 +89,39 @@ public class Mutex {
     public void semSignal(String a, Interpreter interpreter) {
         String program;
         switch (a) {
-            case "userOuput":
+            case "userOutput":
                 printKey++;
-                program = userOutputBlockedQueue.poll();
+
+                if(!userOutputBlockedQueue.isEmpty()){
+
+                    program = userOutputBlockedQueue.poll();
+                    interpreter.getReadyQueue().add(program);
+                }
                 if (!interpreter.getBlockedQueue().isEmpty()) {
                     interpreter.getBlockedQueue().remove();
                 }
-                interpreter.getReadyQueue().add(program);
                 break;
             case "userInput":
                 assignKey++;
+                if(!userInputBlockedQueue.isEmpty()){
+
                 program = userInputBlockedQueue.poll();
+                interpreter.getReadyQueue().add(program);
+                }
                 if (!interpreter.getBlockedQueue().isEmpty()) {
                     interpreter.getBlockedQueue().remove();
                 }
-                interpreter.getReadyQueue().add(program);
                 break;
 
             case "file":
                 readAndWriteFileKey++;
-                program = fileBlockedQueue.poll();
+                if(!fileBlockedQueue.isEmpty()){
+                    program = fileBlockedQueue.poll();
+                    interpreter.getReadyQueue().add(program);
+                }
                 if (!interpreter.getBlockedQueue().isEmpty()) {
                     interpreter.getBlockedQueue().remove();
                 }
-                interpreter.getReadyQueue().add(program);
                 break;
         }
     }

@@ -57,7 +57,7 @@ public class Interpreter {
     }
 
     public void print(Object a, int id) {
-
+            System.out.println("Am Here in the print ONly method");
         if (a instanceof Integer) {
             System.out.println("This is the printed integer result " + (int) a);
         } else System.out.println("This is the printed string result " + (String) a);
@@ -99,14 +99,20 @@ public class Interpreter {
         String result = readFile(Program, id);
 //        String[] terms = result.trim().split("\\s+");
         String[] lines = result.trim().split("\\n");
+        System.out.println("The lines of Program: "+" "+id+Arrays.toString(lines));
         currentFileLines = lines.length;
         int i = (int) programs.get(id).value;
         Object firstInput = null;
         Object secondInput = null;
-        while (i < lines.length) {
             int j = 0;
+            if(i>=lines.length){
+                return ;
+            }
             String[] terms = lines[i].trim().split("\\s+");
-            switch (terms[0]) {
+        System.out.println("The terms of Program: "+" "+id+Arrays.toString(terms));
+
+
+        switch (terms[0]) {
                 case "semWait":
                     scheduler.setCounter(scheduler.getCounter() + 1);
                     if (mutex.semWait(terms[j + 1], id, this, scheduler)) {
@@ -151,9 +157,10 @@ public class Interpreter {
                     i++;
                     break;
                 case "print":
-
+                    System.out.print("Gowa print:");
                     currentProgramLines++;
                     firstInput = getValueOfVariables(id, terms[j + 1]);
+                    System.out.print("Gowa print w variable is :firstinput");
                     print(firstInput, id);
                     scheduler.setCounter(scheduler.getCounter() + 1);
                     i++;
@@ -169,9 +176,10 @@ public class Interpreter {
             }
 
             programs.get(id).value = i;
+            System.out.println("Program: "+id+" Standing in "+i);
             scheduler.scheduler(allThePrograms, this, id);
 
-        }
+
         isRunning = false;
     }
 
@@ -240,6 +248,7 @@ public class Interpreter {
 
 
     public void printFromTo(int a, int b, int id) {
+        System.out.println("Starting the printFromTo Method");
         a++;
         while (a < b) {
             System.out.print(a + " ");

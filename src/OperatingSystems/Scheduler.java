@@ -31,10 +31,9 @@ public class Scheduler {
     }
 
     public void scheduler(String[] programs, Interpreter interpreter, int id) throws IOException {
-        while (true) {
-            for (String s : interpreter.getReadyQueue()) {
-                System.out.println(s);
-            }
+
+        while (true){
+
             time++;
             if (time == 0) {
                 interpreter.getReadyQueue().add(programs[0]);
@@ -48,13 +47,9 @@ public class Scheduler {
             boolean finished = false;
             if (id != 0) {
                 if (Objects.equals(interpreter.getPrograms().get(id).variable, currentProgram)) {
-                    System.out.println("Variable is : " + interpreter.getPrograms().get(id).variable);
-                    System.out.println("CurrentProgram is : " + currentProgram);
-                    if ((int) interpreter.getPrograms().get(id).value > interpreter.currentFileLines - 1) {
-                        System.out.println(interpreter.getPrograms().get(id).value + " " + "Current files" + (interpreter.currentFileLines - 1));
-                    }
                     if ((int) interpreter.getPrograms().get(id).value >= interpreter.currentFileLines) {
                         counter = 0;
+                        interpreter.setRunning(!interpreter.isRunning());
                         if (!interpreter.getReadyQueue().isEmpty()) {
                             currentProgram = interpreter.getReadyQueue().peek();
                             interpreter.runProgram(interpreter.getReadyQueue().poll());
