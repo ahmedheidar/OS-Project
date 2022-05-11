@@ -96,9 +96,7 @@ public class Mutex {
 
                     program = userOutputBlockedQueue.poll();
                     interpreter.getReadyQueue().add(program);
-                }
-                if (!interpreter.getBlockedQueue().isEmpty()) {
-                    interpreter.getBlockedQueue().remove();
+                    interpreter.getBlockedQueue().remove(program);
                 }
                 break;
             case "userInput":
@@ -107,10 +105,9 @@ public class Mutex {
 
                 program = userInputBlockedQueue.poll();
                 interpreter.getReadyQueue().add(program);
+                interpreter.getBlockedQueue().remove(program);
                 }
-                if (!interpreter.getBlockedQueue().isEmpty()) {
-                    interpreter.getBlockedQueue().remove();
-                }
+
                 break;
 
             case "file":
@@ -118,10 +115,9 @@ public class Mutex {
                 if(!fileBlockedQueue.isEmpty()){
                     program = fileBlockedQueue.poll();
                     interpreter.getReadyQueue().add(program);
+                    interpreter.getBlockedQueue().remove(program);
                 }
-                if (!interpreter.getBlockedQueue().isEmpty()) {
-                    interpreter.getBlockedQueue().remove();
-                }
+
                 break;
         }
     }

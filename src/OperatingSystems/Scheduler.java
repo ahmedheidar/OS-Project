@@ -32,30 +32,39 @@ public class Scheduler {
 
     public void scheduler(String[] programs, Interpreter interpreter, int id) throws IOException {
 
-        while (true){
 
+
+        while (true){
             time++;
             if (time == 0) {
+                String result = interpreter.readFile(programs[0]);
+                String[] lines = result.trim().split("\\n+");
+                interpreter.reverseStack(lines,1);
                 interpreter.getReadyQueue().add(programs[0]);
             } else if (time == 1) {
                 interpreter.getReadyQueue().add(programs[1]);
+                String result = interpreter.readFile(programs[1]);
+                String[] lines = result.trim().split("\\n+");
+                interpreter.reverseStack(lines,2);
 
             } else if (time == 4) {
+                String result = interpreter.readFile(programs[2]);
+                String[] lines = result.trim().split("\\n+");
+                interpreter.reverseStack(lines,3);
                 interpreter.getReadyQueue().add(programs[2]);
             }
             //TODO runProgram and see its counter
             boolean finished = false;
             if (id != 0) {
                 if (Objects.equals(interpreter.getPrograms().get(id).variable, currentProgram)) {
-                    if ((int) interpreter.getPrograms().get(id).value >= interpreter.currentFileLines) {
+                    if (interpreter.programs.get(id).stack.isEmpty()) {
+                        finished = true;
                         counter = 0;
                         interpreter.setRunning(!interpreter.isRunning());
                         if (!interpreter.getReadyQueue().isEmpty()) {
                             currentProgram = interpreter.getReadyQueue().peek();
                             interpreter.runProgram(interpreter.getReadyQueue().poll());
-
                         }
-                        finished = true;
                     }
 
                 }
