@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 semWait userInput
 assign a input
 semSignal userInput
@@ -7,14 +6,4 @@ assign b readFile a
 semSignal file
 semWait userOutput
 print b
-=======
-semWait userInput
-assign a input
-semSignal userInput
-semWait file
-assign b readFile a
-semSignal file
-semWait userOutput
-print b
->>>>>>> de998f2 (changing classes to be instance and fixing bugs in readProgram method)
 semSignal userOutput

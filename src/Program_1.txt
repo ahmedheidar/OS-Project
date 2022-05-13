@@ -1,16 +1,7 @@
-<<<<<<< HEAD
 semWait userInput
 assign a input
 assign b input
 semSignal userInput
 semWait userOutput
 printFromTo a b
-=======
-semWait userInput
-assign a input
-assign b input
-semSignal userInput
-semWait userOutput
-printFromTo a b
->>>>>>> de998f2 (changing classes to be instance and fixing bugs in readProgram method)
 semSignal userOutput

@@ -1,47 +1,38 @@
 package OperatingSystems;
 
 import java.io.*;
-import java.sql.Array;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.*;
-import java.util.Map.Entry;
 
 
 public class Interpreter {
+
+    static List<String> instructions = Arrays.asList("semWait", "semSignal", "print", "printFromTo", "input", "readFile",
+        "writeFile", "assign"
+    );
     Queue<String> readyQueue;
     Queue<String> blockedQueue;
     Mutex mutex;
     Scheduler scheduler;
+
     //Add the programs to the hashMap
-    HashMap<Integer, Pair> programs = new HashMap<Integer, Pair>() {
-        {
-            put(1, new Pair("src/Program_1", 0));
-            put(2, new Pair("src/Program_2", 0));
-            put(3, new Pair("src/Program_3", 0));
-        }
+    HashMap<Integer, StackPairs> programs;
 
-    };
-
-    HashMap<Integer, ArrayList<Pair>> programVariables = new HashMap<Integer, ArrayList<Pair>>() {{
-        put(1, new ArrayList<Pair>());
-        put(2, new ArrayList<Pair>());
-        put(3, new ArrayList<Pair>());
-
-    }};
+    HashMap<Integer, ArrayList<Pair>> programVariables;
     boolean isRunning;
-    String[] allThePrograms = {"src/Program_1", "src/Program_2", "src/Program_3"};
-    int currentFileLines;
-    int currentProgramLines;
+    String op1 = "";
+    String op2 = "";
 
-    public Interpreter() {
+
+    public Interpreter(int numOfInstructions) {
         readyQueue = new LinkedList<>();
         blockedQueue = new LinkedList<>();
         mutex = new Mutex();
-        scheduler = new Scheduler();
+        scheduler = new Scheduler(numOfInstructions);
+        programs = new HashMap<>();
+        programVariables = new HashMap<>();
 
     }
-
 
     public Queue<String> getReadyQueue() {
         return readyQueue;
@@ -51,26 +42,33 @@ public class Interpreter {
         return blockedQueue;
     }
 
-    public void assign(Object x, Object y, int id, boolean flag, int i) {
+    public void assign(Object x, Object y, int id) {
         programVariables.get(id).add(new Pair((String) x, y));
 
     }
 
-    public void print(Object a, int id) {
-
+    public void print(Object a) {
+        System.out.println("Started Executing The Print Method\n");
         if (a instanceof Integer) {
-            System.out.println("This is the printed integer result " + (int) a);
-        } else System.out.println("This is the printed string result " + (String) a);
+            System.out.println("This is the printed integer result " + (int) a + "\n");
+        } else System.out.println("This is the printed string result " + (String) a + "\n");
     }
 
     public static void main(String[] args) throws IOException {
-        Interpreter interpreter = new Interpreter();
-        interpreter.setAllPrograms(interpreter.allThePrograms);
+        String[] allThePrograms = {"src/Program_1", "src/Program_2", "src/Program_3"};
+        Interpreter interpreter = new Interpreter(2); //NumberOfInstructions
+        String program = "src/Program_";
+        for (int i = 1; i <= 3; i++) {
+            interpreter.programs.put((i), new StackPairs(program + "" + i, new Stack<>()));
+            interpreter.programVariables.put((i), new ArrayList<Pair>());
+        }
+        interpreter.setAllPrograms(allThePrograms);
+
 
     }
 
 
-    public HashMap<Integer, Pair> getPrograms() {
+    public HashMap<Integer, StackPairs> getPrograms() {
         return programs;
     }
 
@@ -86,94 +84,95 @@ public class Interpreter {
         isRunning = running;
     }
 
-    public int getCurrentFileLines() {
-        return currentFileLines;
-    }
 
-    public void setCurrentFileLines(int currentFileLines) {
-        this.currentFileLines = currentFileLines;
-    }
-
-    public void readProgram(String Program, int id) throws IOException {
+    public void runInstruction(String instruction, int id) throws IOException {
         isRunning = true;
-        String result = readFile(Program, id);
-//        String[] terms = result.trim().split("\\s+");
-        String[] lines = result.trim().split("\\n");
-        currentFileLines = lines.length;
-        int i = (int) programs.get(id).value;
-        Object firstInput = null;
-        Object secondInput = null;
-        while (i < lines.length) {
-            int j = 0;
-            String[] terms = lines[i].trim().split("\\s+");
-            switch (terms[0]) {
-                case "semWait":
-                    scheduler.setCounter(scheduler.getCounter() + 1);
-                    if (mutex.semWait(terms[j + 1], id, this, scheduler)) {
-                    } else {
-                        programs.get(id).value = i;
-                        i--;
-                    }
-                    i++;
+
+        String currentInstruction = instruction;
+
+
+        while (!instructions.contains(programs.get(id).stack.peek())) {
+            currentInstruction = programs.get(id).stack.peek();
+            if (op1 == "" || op1.isEmpty()) {
+                op1 = currentInstruction;
+                programs.get(id).stack.pop();
+
+            } else {
+                op2 = currentInstruction;
+                programs.get(id).stack.pop();
+            }
+        }
+
+
+        if (!programs.get(id).stack.peek().isEmpty())
+            currentInstruction = programs.get(id).stack.peek();
+        if (!op1.isEmpty() || !op2.isEmpty() || instructions.contains(currentInstruction)) {
+            System.out.println("Program: " + id + " " + "Executing instruction: " + currentInstruction + "\n");
+            scheduler.setCounter(scheduler.getCounter() + 1);
+            currentInstruction = programs.get(id).stack.pop(); //SemWait
+            switch (currentInstruction) {
+                case "input":
+                    System.out.println();
+                    System.out.println("Please Enter Value");
+                    Scanner sc = new Scanner(System.in);
+                    String item = sc.next();
+                    programs.get(id).stack.push(item);
+                    op1 = "";
                     break;
-                case "assign":
-                    currentProgramLines++;
-                    scheduler.setCounter(scheduler.getCounter() + 1);
-                    String firstParams = terms[j + 1];
-                    String secondParams = terms[j + 2];
-                    if (secondParams.equals("readFile")) {
-                        String fourthInput = (String) getValueOfVariables(id, terms[j + 3]);
-                        String readResult = readFile(fourthInput, id);
-                        if (!readResult.equals("The resource is blocked")) {
-                            assign(firstParams, readResult, id, true, i);
-                        }
-                    } else if (secondParams.equals("input")) {
-                        Scanner sc = new Scanner(System.in);
-                        System.out.println("Enter a value: ");
-                        assign(firstParams, sc.next(), id, false, i);
-                    } else {
-                        assign(firstParams, secondParams, id, true, i);
+
+                case "semWait":
+                    if (!mutex.semWait(op1, id, this, scheduler)) {
+                        programs.get(id).stack.push("semWait");
+                        programs.get(id).stack.push(op1);
                     }
-                    i++;
+                    op1 = "";
                     break;
                 case "semSignal":
-                    currentProgramLines++;
-                    scheduler.setCounter(scheduler.getCounter() + 1);
-                    mutex.semSignal(terms[j + 1], this);
-                    i++;
+                    mutex.semSignal(op1, this);
+                    op1 = "";
                     break;
-                case "writeFile":
-                    currentProgramLines++;
-                    scheduler.setCounter(scheduler.getCounter() + 1);
-                    firstInput = getValueOfVariables(id, terms[j + 1]);
-                    secondInput = getValueOfVariables(id, terms[j + 2]);
-                    writeFile((String) firstInput, (String) secondInput, id);
-                    i++;
+
+                case "assign":
+                    assign(op2, op1, id);
+                    op1 = "";
+                    op2 = "";
                     break;
                 case "print":
-
-                    currentProgramLines++;
-                    firstInput = getValueOfVariables(id, terms[j + 1]);
-                    print(firstInput, id);
-                    scheduler.setCounter(scheduler.getCounter() + 1);
-                    i++;
+                    print(getValueOfVariables(id, op1));
                     break;
                 case "printFromTo":
-                    currentProgramLines++;
-                    scheduler.setCounter(scheduler.getCounter() + 1);
-                    firstInput = getValueOfVariables(id, terms[j + 1]);
-                    secondInput = getValueOfVariables(id, terms[j + 2]);
-                    printFromTo(Integer.parseInt(((String) firstInput)), Integer.parseInt(((String) secondInput)), id);
-                    i++;
+                    printFromTo(Integer.parseInt((String) getValueOfVariables(id, op2)), Integer.parseInt((String) getValueOfVariables(id, op1)));
+                    op1 = "";
+                    op2 = "";
+                    break;
+
+                case "writeFile":
+                    writeFile((String) getValueOfVariables(id, op2), (String) getValueOfVariables(id, op1), id);
+                    op1 = "";
+                    op2 = "";
+                    break;
+                case "readFile":
+                    String resultFile = readFile((String) getValueOfVariables(id, op1));
+                    if (resultFile != "No File Exists") {
+                        programs.get(id).stack.push(resultFile);
+                    }
+                    op1 = "";
                     break;
             }
-
-            programs.get(id).value = i;
-            scheduler.scheduler(allThePrograms, this, id);
-
         }
-        isRunning = false;
     }
+
+
+    public void reverseStack(String[] lines, int id) {
+        if (id == 0) return;
+        for (int i = lines.length - 1; i >= 0; i--) {
+            String[] terms = lines[i].trim().split("\\s+");
+            for (String term : terms) {
+                programs.get(id).stack.push(term);
+            }
+        }
+    }
+
 
     private Object getValueOfVariables(int id, String variableName) {
         ArrayList<Pair> result = programVariables.get(id);
@@ -185,37 +184,35 @@ public class Interpreter {
         return null;
     }
 
-    public void runProgram(String programName) throws IOException {
-        for (Integer key : programs.keySet()) {
-            if (programs.get(key).variable.equals(programName)) {
-                readProgram(programName, key);
-                break;
-
-            }
-        }
-    }
 
     public void setAllPrograms(String[] programs) throws IOException {
-        scheduler.scheduler(programs, this, 0);
+        System.out.println("SKSDDSDSD");
+        scheduler.scheduler(programs, this, 1);
     }
 
-    public String readFile(String argument, int id) throws IOException {
+    public String readFile(String argument) throws IOException {
         String filePath = argument;
         filePath += ".txt"; //Program.txt
-        BufferedReader reader = new BufferedReader(new FileReader(filePath));
-        StringBuilder stringBuilder = new StringBuilder();
-        String line;
-        //assign
-        //print
-        //Null
-        while ((line = reader.readLine()) != null) {
-            stringBuilder.append(line);
-            stringBuilder.append("\n");
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(filePath));
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            //assign
+            //print
+            //Null
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+                stringBuilder.append("\n");
+            }
+            // delete the last new line separator
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            reader.close();
+            return stringBuilder.toString();
+        } catch (FileNotFoundException e) {
+            System.out.println("No File Exists");
+            return "No File Exists";
         }
-        // delete the last new line separator
-        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-        reader.close();
-        return stringBuilder.toString();
+
     }
 
 
@@ -226,7 +223,7 @@ public class Interpreter {
             PrintWriter pw = new PrintWriter(file);
             pw.println(value);
             for (int i = 0; i < programVariables.get(id).size(); i++) {
-                if (programVariables.get(id).get(i).variable == filePath) {
+                if (programVariables.get(id).get(i).variable.equals(filePath)) {
                     programVariables.get(id).get(i).value = value;
                     break;
                 }
@@ -239,12 +236,14 @@ public class Interpreter {
     }
 
 
-    public void printFromTo(int a, int b, int id) {
+    public void printFromTo(int a, int b) {
+        System.out.println("Started Executing The Print From To Method\n");
         a++;
         while (a < b) {
             System.out.print(a + " ");
             a++;
         }
+        System.out.println("### Finished Executing Print From To Method###\n");
     }
 
 
