@@ -14,16 +14,12 @@ public class Interpreter {
     Queue<String> blockedQueue;
     Mutex mutex;
     Scheduler scheduler;
-
     //Add the programs to the hashMap
-    HashMap<Integer, StackPairs> programs;
-
+    HashMap<Integer, Pair> programs;
     HashMap<Integer, ArrayList<Pair>> programVariables;
     boolean isRunning;
     String op1 = "";
     String op2 = "";
-
-
     public Interpreter(int numOfInstructions) {
         readyQueue = new LinkedList<>();
         blockedQueue = new LinkedList<>();
@@ -31,9 +27,7 @@ public class Interpreter {
         scheduler = new Scheduler(numOfInstructions);
         programs = new HashMap<>();
         programVariables = new HashMap<>();
-
     }
-
     public Queue<String> getReadyQueue() {
         return readyQueue;
     }
@@ -59,16 +53,12 @@ public class Interpreter {
         Interpreter interpreter = new Interpreter(2); //NumberOfInstructions
         String program = "src/Program_";
         for (int i = 1; i <= 3; i++) {
-            interpreter.programs.put((i), new StackPairs(program + "" + i, new Stack<>()));
+            interpreter.programs.put((i), new Pair(program + "" + i, new Stack<>()));
             interpreter.programVariables.put((i), new ArrayList<Pair>());
         }
         interpreter.setAllPrograms(allThePrograms);
-
-
     }
-
-
-    public HashMap<Integer, StackPairs> getPrograms() {
+    public HashMap<Integer, Pair> getPrograms() {
         return programs;
     }
 
@@ -90,40 +80,39 @@ public class Interpreter {
 
         String currentInstruction = instruction;
 
-
-        while (!instructions.contains(programs.get(id).stack.peek())) {
-            currentInstruction = programs.get(id).stack.peek();
+        while (!instructions.contains(((Stack<String>) programs.get(id).value).peek())) {
+            currentInstruction = ((Stack<String>) programs.get(id).value).peek();
             if (op1 == "" || op1.isEmpty()) {
                 op1 = currentInstruction;
-                programs.get(id).stack.pop();
+                ((Stack<String>) programs.get(id).value).pop();
 
             } else {
                 op2 = currentInstruction;
-                programs.get(id).stack.pop();
+                ((Stack<String>) programs.get(id).value).pop();
             }
         }
 
 
-        if (!programs.get(id).stack.peek().isEmpty())
-            currentInstruction = programs.get(id).stack.peek();
+        if (!((Stack<String>) programs.get(id).value).peek().isEmpty())
+            currentInstruction = ((Stack<String>) programs.get(id).value).peek();
         if (!op1.isEmpty() || !op2.isEmpty() || instructions.contains(currentInstruction)) {
             System.out.println("Program: " + id + " " + "Executing instruction: " + currentInstruction + "\n");
             scheduler.setCounter(scheduler.getCounter() + 1);
-            currentInstruction = programs.get(id).stack.pop(); //SemWait
+            currentInstruction = ((Stack<String>) programs.get(id).value).pop(); //SemWait
             switch (currentInstruction) {
                 case "input":
                     System.out.println();
                     System.out.println("Please Enter Value");
                     Scanner sc = new Scanner(System.in);
                     String item = sc.next();
-                    programs.get(id).stack.push(item);
+                    ((Stack<String>) programs.get(id).value).push(item);
                     op1 = "";
                     break;
 
                 case "semWait":
                     if (!mutex.semWait(op1, id, this, scheduler)) {
-                        programs.get(id).stack.push("semWait");
-                        programs.get(id).stack.push(op1);
+                        ((Stack<String>) programs.get(id).value).push("semWait");
+                        ((Stack<String>) programs.get(id).value).push(op1);
                     }
                     op1 = "";
                     break;
@@ -154,7 +143,7 @@ public class Interpreter {
                 case "readFile":
                     String resultFile = readFile((String) getValueOfVariables(id, op1));
                     if (resultFile != "No File Exists") {
-                        programs.get(id).stack.push(resultFile);
+                        ((Stack<String>) programs.get(id).value).push(resultFile);
                     }
                     op1 = "";
                     break;
@@ -168,7 +157,7 @@ public class Interpreter {
         for (int i = lines.length - 1; i >= 0; i--) {
             String[] terms = lines[i].trim().split("\\s+");
             for (String term : terms) {
-                programs.get(id).stack.push(term);
+                ((Stack<String>) programs.get(id).value).push(term);
             }
         }
     }

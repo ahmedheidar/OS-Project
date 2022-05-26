@@ -179,7 +179,6 @@ public class Mutex {
             case "userInput":
                 assignKey++;
                 if (!userInputBlockedQueue.isEmpty()) {
-
                     program = userInputBlockedQueue.poll();
                     interpreter.getReadyQueue().add(program);
                     interpreter.getBlockedQueue().remove(program);

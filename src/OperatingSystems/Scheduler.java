@@ -2,6 +2,7 @@ package OperatingSystems;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Stack;
 
 public class Scheduler {
 
@@ -53,7 +54,7 @@ public class Scheduler {
             boolean finished = false;
             if (id != 0) {
                 if (Objects.equals(interpreter.getPrograms().get(id).variable, currentProgram)) {
-                    if (interpreter.programs.get(id).stack.isEmpty()) {
+                    if (((Stack<String>) interpreter.programs.get(id).value).isEmpty()) {
                         finished = true;
                         counter = 0;
                         interpreter.setRunning(!interpreter.isRunning());
@@ -64,8 +65,11 @@ public class Scheduler {
             }
             if (interpreter.isRunning) {
                 id = getId(interpreter, id);
-                interpreter.runInstruction(interpreter.programs.get(id).stack.peek(), id);
-                time++;
+                if (!((Stack<String>) interpreter.programs.get(id).value).isEmpty()) {
+                    interpreter.runInstruction(((Stack<String>) interpreter.programs.get(id).value).peek(), id);
+                    time++;
+                }
+
 
             }
             if (counter == quanta) {
@@ -85,8 +89,10 @@ public class Scheduler {
                         break;
                     }
                 }
-                interpreter.runInstruction(interpreter.programs.get(id).stack.peek(), id);
-                time++;
+                if (!((Stack<String>) interpreter.programs.get(id).value).isEmpty()) {
+                    interpreter.runInstruction(((Stack<String>) interpreter.programs.get(id).value).peek(), id);
+                    time++;
+                }
             }
             System.out.println("Current Program Running : " + currentProgram + "\n");
             System.out.println("Process In The Ready Queue After: ");
