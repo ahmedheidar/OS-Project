@@ -60,7 +60,7 @@ public class Interpreter {
 //        Program p2 = new Program("src/Program_2", 1);
 //        Program p3 = new Program("src/Program_3", 4);
 //        String[] allThePrograms = {p1.filePath, p2.filePath, p3.filePath};
-//        Interpreter interpreter = new Interpreter(2); //NumberOfInstructions
+        Interpreter interpreter = new Interpreter(2); //NumberOfInstructions
 //        String program = "src/Program_";
 //        for (int i = 1; i <= 3; i++) {
 //            interpreter.programs.put((i), new Pair(program + "" + i, new Stack<>()));
@@ -261,6 +261,7 @@ public class Interpreter {
         }
         System.out.println("### Finished Executing Print From To Method###\n");
     }
+
 
 
 }
