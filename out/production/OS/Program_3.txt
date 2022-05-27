@@ -7,3 +7,5 @@ semSignal file
 semWait userOutput
 print b
 semSignal userOutput
+
+11+4+3 =18 +4

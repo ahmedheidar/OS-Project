@@ -1,6 +1,7 @@
 package OperatingSystems;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Stack;
 
@@ -9,9 +10,7 @@ public class Scheduler {
     int time = 0;
     int counter;
     int quanta;
-
     static String currentProgram = "";
-
     public Scheduler(int quanta) {
         this.quanta = quanta;
 
@@ -27,22 +26,23 @@ public class Scheduler {
 
 
     public void scheduler(String[] programs, Interpreter interpreter, int id) throws IOException {
+        String programLength;
+        int instructionSize;
         while (true) {
             if (time == 0) {
                 String result = interpreter.readFile(programs[0]);
                 String[] lines = result.trim().split("\\n+");
-                interpreter.reverseStack(lines, 1);
                 interpreter.getReadyQueue().add(programs[0]);
+
+
             } else if (time == 1) {
                 interpreter.getReadyQueue().add(programs[1]);
                 String result = interpreter.readFile(programs[1]);
                 String[] lines = result.trim().split("\\n+");
-                interpreter.reverseStack(lines, 2);
 
             } else if (time == 4) {
                 String result = interpreter.readFile(programs[2]);
                 String[] lines = result.trim().split("\\n+");
-                interpreter.reverseStack(lines, 3);
                 interpreter.getReadyQueue().add(programs[2]);
             }
             System.out.println("Process In The Ready Queue: ");
@@ -114,6 +114,41 @@ public class Scheduler {
 
         }
         System.out.println(time);
+    }
+
+    private void checkMemorySize(Interpreter interpreter, int id, String program) throws IOException {
+        String result = interpreter.readFile(program);
+        String[] lines = result.trim().split("\\n+");
+        Stack<String> programInstructions = new Stack<>();
+        interpreter.reverseStack(lines, id, programInstructions);
+        ArrayList<Object> programDetails = new ArrayList<>();
+        if (interpreter.memory[0] != (Integer) 0 && interpreter.memory[20] != (Integer) 0) {
+            ArrayList<Object> currentProgram = (ArrayList<Object>) interpreter.memory[0];
+            PCB pcb = (PCB) currentProgram.get(0);
+            if (pcb.getProcessState() != State.RUNNING) {
+                interpreter.memory[0] = 0;
+            }
+
+
+        } else {
+            if (interpreter.memory[0] == (Integer) 0) {
+                programDetails.add(new PCB(id, State.READY, 1, new int[]{0, 19}));
+                programDetails.add(new Pair("x", null));
+                programDetails.add(new Pair("y", null));
+                programDetails.add(new Pair("z", null));
+                programDetails.add(programInstructions);
+                interpreter.memory[0] = programDetails;
+            } else if (interpreter.memory[20] == (Integer) 0) {
+                programDetails.add(new PCB(id, State.READY, 1, new int[]{20, 39}));
+                programDetails.add(new Pair("x", null));
+                programDetails.add(new Pair("y", null));
+                programDetails.add(new Pair("z", null));
+                programDetails.add(programInstructions);
+                interpreter.memory[20] = programDetails;
+            }
+        }
+
+
     }
 
     public int getId(Interpreter interpreter, int id) {
