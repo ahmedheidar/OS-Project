@@ -1,5 +1,8 @@
 package OperatingSystems;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -11,6 +14,7 @@ public class Scheduler {
     int counter;
     int quanta;
     static String currentProgram = "";
+
     public Scheduler(int quanta) {
         this.quanta = quanta;
 
@@ -129,7 +133,6 @@ public class Scheduler {
                 interpreter.memory[0] = 0;
             }
 
-
         } else {
             if (interpreter.memory[0] == (Integer) 0) {
                 programDetails.add(new PCB(id, State.READY, 1, new int[]{0, 19}));
@@ -160,4 +163,42 @@ public class Scheduler {
         }
         return id;
     }
+
+    public ArrayList<Object> readFromHardDisk(Interpreter interpreter, String program) throws IOException {
+        String result = interpreter.readFile(program);
+        String lines[] = result.split("\\r?\\n");
+        int start = 0;
+        String[] linesToSplit;
+        Stack<String> originalStack = new Stack<>();
+        ArrayList<Object> resultOfFunction = new ArrayList<>();
+        for (int i = 0; i < lines.length; i++) {
+            linesToSplit = lines[i].split(" ");
+            if (i == 0) {
+                int processID = Integer.parseInt(linesToSplit[0]);
+                String processState = (linesToSplit[1]);
+                State processEnumState = State.valueOf(processState);
+                int programCounter = Integer.parseInt(linesToSplit[2]);
+                int[] memBound = {Integer.parseInt(linesToSplit[3]), Integer.parseInt(linesToSplit[4])};
+                PCB pcb = new PCB(processID, processEnumState, programCounter, memBound);
+                resultOfFunction.add(pcb);
+            } else if (i == 1 || i == 2 || i == 3) {
+                Pair variable = new Pair(linesToSplit[0], linesToSplit[1]);
+                resultOfFunction.add(variable);
+            } else {
+                int end = lines.length - 1;
+                while (end >= 4) {
+                    originalStack.push(lines[end]);
+                    end--;
+                }
+                resultOfFunction.add(originalStack);
+                break;
+            }
+
+        }
+
+        return resultOfFunction;
+
+    }
+
+
 }

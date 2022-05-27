@@ -1,0 +1,7 @@
+1 READY 1 0 19
+x null
+y null
+z null
+semWait userSignal
+input
+assign a
