@@ -5,3 +5,5 @@ semSignal userInput
 semWait file
 writeFile a b
 semSignal file
+
+9+4+3= 16

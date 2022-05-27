@@ -5,3 +5,4 @@ semSignal userInput
 semWait file
 writeFile a b
 semSignal file
+
