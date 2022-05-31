@@ -97,7 +97,6 @@ public class Mutex {
                     return true;
                 } else {
                     program = getProgramName(id);
-
                     userInputBlockedQueue.add(program);
                     interpreter.getBlockedQueue().add(program);
                     interpreter.setRunning(false);
@@ -173,7 +172,6 @@ public class Mutex {
             }
             System.out.println("### Finishes File Queue Before Releasing The Resources ###\n");
         }
-
         String program;
         switch (a) {
             case "userOutput":

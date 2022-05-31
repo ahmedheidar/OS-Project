@@ -32,10 +32,7 @@ public class Scheduler {
 
 
     public void scheduler(String[] programs, Interpreter interpreter, int id) throws IOException {
-        String programLength;
-        int instructionSize;
         while (true) {
-
             if (time == 0) {
                 String result = interpreter.readFile(programs[0]);
                 String[] lines = result.trim().split("\\n+");
@@ -56,12 +53,10 @@ public class Scheduler {
             for (String s : interpreter.readyQueue) {
                 System.out.println(s);
             }
+
             System.out.println();
             //TODO runProgram and see its counter
             boolean finished = false;
-            //Getting the program that is running through the PCB of the memory
-            //TODO before getting the id again, after the blocking of the program
-            //TODO we have to change the id to the program that is in the readyQueue first
             ArrayList<Object> programRunning = interpreter.getTheProgram(id);
             PCB pcb;
             Stack<String> currentStack;
@@ -97,25 +92,14 @@ public class Scheduler {
             } else {
                 pcb = (PCB) programRunning.get(0);
                 currentStack = (Stack<String>) programRunning.get(4);
-                if (currentStack.size() == 0) {
-                    pcb.setProcessState(State.READY);
-                }
-
             }
-            if (pcb.getProcessID() != id) {
-                programRunning = (ArrayList<Object>) interpreter.memory[20];
-            }
-
             if (pcb.getProcessID() == id) {
                 if (((Stack<String>) programRunning.get(4)).isEmpty()) {
                     finished = true;
                     counter = 0;
                     interpreter.setRunning(!interpreter.isRunning());
                 }
-
             }
-
-
             if (interpreter.isRunning) {
                 if (!(currentStack.isEmpty())) {
                     //Run the instruction that the pc arrow on it and increment the pc of it
@@ -180,7 +164,6 @@ public class Scheduler {
                     pcb = (PCB) programRunning.get(0);
                     currentStack = (Stack<String>) programRunning.get(4);
                 }
-
                 if (!(currentStack.isEmpty())) {
                     pcb.setProcessState(State.RUNNING);
                     if (pcb.getProgramCounter() == 0) {
@@ -189,6 +172,9 @@ public class Scheduler {
                         interpreter.runInstruction(currentStack.peek(), id);
                     }
                     //TODO change the pcbState with Blocked after executing its instruction if its blocked state
+                    if (currentStack.size() == 0) {
+                        pcb.setProcessState(State.READY);
+                    }
                     id = changePcbToBlocked(interpreter, pcb, id);
                     pcb.setProgramCounter(pcb.getProgramCounter() + 1);
                     time++;
@@ -210,8 +196,6 @@ public class Scheduler {
             if (!interpreter.isRunning && interpreter.getReadyQueue().isEmpty() && interpreter.getBlockedQueue().isEmpty()) {
                 break;
             }
-
-
         }
         System.out.println(time);
     }

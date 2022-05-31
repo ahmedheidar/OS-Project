@@ -74,8 +74,8 @@ public class Interpreter {
     public void print(Object a) {
         System.out.println("Started Executing The Print Method\n");
         if (a instanceof Integer) {
-            System.out.println("This is the printed integer result " + (int) a + "\n");
-        } else System.out.println("This is the printed string result " + (String) a + "\n");
+            System.out.println("This is the printed integer result\n " + (int) a + "\n");
+        } else System.out.println("This is the printed string result\n " + (String) a + "\n");
     }
 
 
@@ -160,9 +160,7 @@ public class Interpreter {
                     break;
 
                 case "semWait":
-                    if (!mutex.semWait(op1, id, this, scheduler)) {
-                        ((Stack<String>) currentProgram.get(4)).push("semWait" + " " + op1);
-                    }
+                    mutex.semWait(op1, id, this, scheduler);
                     op1 = "";
                     break;
                 case "semSignal":
