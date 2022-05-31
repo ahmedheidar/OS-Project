@@ -85,16 +85,8 @@ public class Interpreter {
         Program p3 = new Program("src/Program_3", 4);
         String[] allThePrograms = {p1.filePath, p2.filePath, p3.filePath};
         Interpreter interpreter = new Interpreter(2); //NumberOfInstructions
-
-
         interpreter.setAllPrograms(allThePrograms);
 
-
-//
-//
-//        // Fetching the specific element from the Stack
-//        System.out.println("The element is: "
-//            + stack.get((stack.size() - pc) - 1));
 
     }
 
@@ -120,10 +112,19 @@ public class Interpreter {
         //assign a
         //readfile b
         isRunning = true;
-        String[] terms = instruction.split(" ");
+        boolean readFlag = false;
+        String[] terms = instruction.split(" "); //assign a readfile B
         int end = terms.length - 1; //"assign a 10"
         String currentInstruction = terms[end];
-        while (!instructions.contains(currentInstruction)) {
+        if (terms.length > 5) {
+            op2 = terms[1];
+            for (int i = 2; i < terms.length; i++) {
+                op1 = op1 + " " + terms[i];
+            }
+            readFlag = true;
+            currentInstruction = "assign";
+        }
+        while (!instructions.contains(currentInstruction) && !readFlag) {
             if (op1 == "" || op1.isEmpty()) {
                 op1 = currentInstruction; //op1 = userOutput
                 if (end - 1 >= 0) {
@@ -207,7 +208,7 @@ public class Interpreter {
             System.out.println("i: " + i);
             String[] terms = lines[i].split("\\s");
             if (terms.length >= 3) {
-                if (terms[2].equals("readfile")) { //asign a readfile b
+                if (terms[2].equals("readFile")) { //asign a readfile b
                     programStack.push(terms[0] + " " + terms[1]);
                     programStack.push(terms[2] + " " + terms[3]);
                 } else if (terms[2].equals("input")) {//assign a input
