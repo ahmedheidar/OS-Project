@@ -93,15 +93,11 @@ public class Scheduler {
                             interpreter.memory[20] = programRunning;
                         }
                     }
-
                 }
             } else {
                 pcb = (PCB) programRunning.get(0);
                 currentStack = (Stack<String>) programRunning.get(4);
                 if (currentStack.size() == 0) {
-                    programRunning = interpreter.getTheProgram(id);
-                    pcb = (PCB) programRunning.get(0);
-                    currentStack = (Stack<String>) programRunning.get(4);
                     pcb.setProcessState(State.READY);
                 }
 
@@ -109,16 +105,16 @@ public class Scheduler {
             if (pcb.getProcessID() != id) {
                 programRunning = (ArrayList<Object>) interpreter.memory[20];
             }
-            if (id != 0) {
-                if (pcb.getProcessID() == id) {
-                    if (((Stack<String>) programRunning.get(4)).isEmpty()) {
-                        finished = true;
-                        counter = 0;
-                        interpreter.setRunning(!interpreter.isRunning());
-                    }
 
+            if (pcb.getProcessID() == id) {
+                if (((Stack<String>) programRunning.get(4)).isEmpty()) {
+                    finished = true;
+                    counter = 0;
+                    interpreter.setRunning(!interpreter.isRunning());
                 }
+
             }
+
 
             if (interpreter.isRunning) {
                 if (!(currentStack.isEmpty())) {
@@ -150,8 +146,6 @@ public class Scheduler {
                 if (currentProgram.equals("src/Program_1")) id = 1;
                 else if (currentProgram.equals("src/Program_2")) id = 2;
                 else id = 3;
-                //TODO let the programRunning 115 lines be after inserting in the memory
-                //TODO parsing the first line in the hardDisk and will be the ID of the process
                 programRunning = interpreter.getTheProgram(id);
                 if (programRunning == null) {
                     //TODO clear the hardDisk
@@ -181,14 +175,12 @@ public class Scheduler {
                                 interpreter.memory[20] = programRunning;
                             }
                         }
-
                     }
-
-
                 } else {
                     pcb = (PCB) programRunning.get(0);
                     currentStack = (Stack<String>) programRunning.get(4);
                 }
+
                 if (!(currentStack.isEmpty())) {
                     pcb.setProcessState(State.RUNNING);
                     if (pcb.getProgramCounter() == 0) {
@@ -292,9 +284,9 @@ public class Scheduler {
     }
 
     private void addProgramVariables(ArrayList<Object> programDetails, Stack<String> programInstructions) {
-        programDetails.add(new Pair(null, null));
-        programDetails.add(new Pair(null, null));
-        programDetails.add(new Pair(null, null));
+        programDetails.add(new Pair("", null));
+        programDetails.add(new Pair("", null));
+        programDetails.add(new Pair("", null));
         programDetails.add(programInstructions);
     }
 

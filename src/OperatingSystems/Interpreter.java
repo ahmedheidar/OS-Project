@@ -52,17 +52,22 @@ public class Interpreter {
         for (int i = 0; i < 21; i += 20) {
             currentProgram = (ArrayList<Object>) memory[i];
             PCB pcb = (PCB) currentProgram.get(0);
-            if (pcb.getProcessID() == id) {
-                Pair pair = (Pair) currentProgram.get(start);
-                while (pair.variable == null && start < 3) {
-                    start++;
-                    pair = (Pair) currentProgram.get(start);
+            int index = 1;
+            Pair pair = (Pair) currentProgram.get(1);
+            if (pcb.getProcessID() == id)
+                while (index < 4) {
+                    if (pair.variable.equals("")) {
+                        pair.variable = (String) x;
+                        pair.value = y;
+                        index++;
+                        break;
+                    } else {
+                        index++;
+                        if (index == 4) break;
+                        pair = (Pair) currentProgram.get(index);
+                    }
                 }
-                pair.variable = (String) x;
-                pair.value = y;
-                break;
 
-            }
         }
     }
 
@@ -121,13 +126,13 @@ public class Interpreter {
         while (!instructions.contains(currentInstruction)) {
             if (op1 == "" || op1.isEmpty()) {
                 op1 = currentInstruction; //op1 = userOutput
-                if (end - 1 <= terms.length - 1) {
+                if (end - 1 >= 0) {
                     currentInstruction = terms[end - 1]; //semWait
                     end--;
                 }
             } else {
                 op2 = currentInstruction;
-                if (end - 1 <= terms.length - 1) {
+                if (end - 1 >= 0) {
                     currentInstruction = terms[end - 1];
                     end--;
                 }
@@ -241,7 +246,7 @@ public class Interpreter {
             PCB pcb = (PCB) currentProgram.get(0);
             Pair pair = (Pair) currentProgram.get(1);
             if (pcb.getProcessID() == id) {
-                while (pair.variable != variableName && start < 3) {
+                while (!pair.variable.equals(variableName) && start < 3) {
                     start++;
                     pair = (Pair) currentProgram.get(start);
                 }
