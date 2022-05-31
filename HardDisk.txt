@@ -1,7 +1,5 @@
-1 READY 1 0 19
-x null
-y null
-z null
-semWait userSignal
-input
-assign a
+1 READY 9 0 19
+null null
+null null
+b 20
+

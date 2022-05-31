@@ -42,6 +42,12 @@ public class Mutex {
     }
 
 
+    public String getProgramName(int id) {
+        if (id == 1) return "src/Program_1";
+        else if (id == 2) return "src/Program_2";
+        else return "src/Program_3";
+    }
+
     public boolean semWait(String a, int id, Interpreter interpreter, Scheduler scheduler) {
         String program;
         System.out.println("The Blocked Queue Before Trying to use Resources: ");
@@ -56,7 +62,7 @@ public class Mutex {
             }
             System.out.println("### Finishes UserOutput Queue Before Trying to use Resources ###\n");
         }
-        if (a.equals( "userInput")) {
+        if (a.equals("userInput")) {
             System.out.println("The UserInput Queue Before Trying to use Resources: ");
             for (String s : userInputBlockedQueue) {
                 System.out.println(s);
@@ -76,11 +82,12 @@ public class Mutex {
                     printKey--;
                     return true;
                 } else {
-                    program = interpreter.getPrograms().get(id).variable;
+                    program = getProgramName(id);
                     userOutputBlockedQueue.add(program);
                     interpreter.getBlockedQueue().add(program);
                     interpreter.setRunning(false);
                     Scheduler.currentProgram = "";
+
                 }
                 break;
 
@@ -89,7 +96,8 @@ public class Mutex {
                     assignKey--;
                     return true;
                 } else {
-                    program = interpreter.getPrograms().get(id).variable;
+                    program = getProgramName(id);
+
                     userInputBlockedQueue.add(program);
                     interpreter.getBlockedQueue().add(program);
                     interpreter.setRunning(false);
@@ -101,7 +109,7 @@ public class Mutex {
                     readAndWriteFileKey--;
                     return true;
                 } else {
-                    program = interpreter.getPrograms().get(id).variable;
+                    program = getProgramName(id);
                     fileBlockedQueue.add(program);
                     interpreter.getBlockedQueue().add(program);
                     interpreter.setRunning(false);
@@ -114,14 +122,14 @@ public class Mutex {
             System.out.println(s);
         }
         System.out.println("### Finishes Blocked Queue After Trying to use Resources ###\n");
-        if (a.equals( "userOutput")) {
+        if (a.equals("userOutput")) {
             System.out.println("The UserOutput Queue After Trying to use Resources: ");
             for (String s : userOutputBlockedQueue) {
                 System.out.println(s);
             }
             System.out.println("### Finishes UserOutput Queue After Trying to use Resources ###\n");
         }
-        if (a.equals( "userInput")) {
+        if (a.equals("userInput")) {
             System.out.println("The UserInput Queue After Trying to use Resources: ");
             for (String s : userInputBlockedQueue) {
                 System.out.println(s);
@@ -144,21 +152,21 @@ public class Mutex {
             System.out.println(s);
         }
         System.out.println("### Finishes Blocked Queue Before Releasing The Resources ###\n");
-        if (a.equals( "userOutput")) {
+        if (a.equals("userOutput")) {
             System.out.println("The UserOutput Queue Before Releasing The Resources: ");
             for (String s : userOutputBlockedQueue) {
                 System.out.println(s);
             }
             System.out.println("### Finishes UserOutput Queue Before Releasing The Resources ###\n");
         }
-        if (a.equals( "userInput")) {
+        if (a.equals("userInput")) {
             System.out.println("The UserInput Queue Before Releasing The Resources: ");
             for (String s : userInputBlockedQueue) {
                 System.out.println(s);
             }
             System.out.println("### Finishes UserInput Queue Before Releasing The Resources ###\n");
         }
-        if (a.equals( "file")) {
+        if (a.equals("file")) {
             System.out.println("The File Queue Before Releasing The Resources: ");
             for (String s : fileBlockedQueue) {
                 System.out.println(s);
@@ -216,7 +224,7 @@ public class Mutex {
             }
             System.out.println("### Finishes UserInput After Before Releasing The Resources ###\n");
         }
-        if (a.equals( "file")) {
+        if (a.equals("file")) {
             System.out.println("The File Queue After Releasing The Resources: ");
             for (String s : fileBlockedQueue) {
                 System.out.println(s);

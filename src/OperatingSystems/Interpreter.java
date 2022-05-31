@@ -23,6 +23,8 @@ public class Interpreter {
     final int memorySize = 40;
     int memoryPointer;
     Object[] memory;
+    ArrayList<Object> currentProgram;
+
 
     public Interpreter(int numOfInstructions) {
         readyQueue = new LinkedList<>();
@@ -44,7 +46,24 @@ public class Interpreter {
     }
 
     public void assign(Object x, Object y, int id) {
-        programVariables.get(id).add(new Pair((String) x, y));
+//        programVariables.get(id).add(new Pair((String) x, y));
+        //get the program that has pcb id which is id that passed
+        int start = 1;
+        for (int i = 0; i < 21; i += 20) {
+            currentProgram = (ArrayList<Object>) memory[i];
+            PCB pcb = (PCB) currentProgram.get(0);
+            if (pcb.getProcessID() == id) {
+                Pair pair = (Pair) currentProgram.get(start);
+                while (pair.variable == null && start < 3) {
+                    start++;
+                    pair = (Pair) currentProgram.get(start);
+                }
+                pair.variable = (String) x;
+                pair.value = y;
+                break;
+
+            }
+        }
     }
 
     public void print(Object a) {
@@ -56,22 +75,23 @@ public class Interpreter {
 
 
     public static void main(String[] args) throws IOException {
-//        Program p1 = new Program("src/Program_1", 0);
-//        Program p2 = new Program("src/Program_2", 1);
-//        Program p3 = new Program("src/Program_3", 4);
-//        String[] allThePrograms = {p1.filePath, p2.filePath, p3.filePath};
+        Program p1 = new Program("src/Program_1", 0);
+        Program p2 = new Program("src/Program_2", 1);
+        Program p3 = new Program("src/Program_3", 4);
+        String[] allThePrograms = {p1.filePath, p2.filePath, p3.filePath};
         Interpreter interpreter = new Interpreter(2); //NumberOfInstructions
-//        String program = "src/Program_";
-//        for (int i = 1; i <= 3; i++) {
-//            interpreter.programs.put((i), new Pair(program + "" + i, new Stack<>()));
-//            interpreter.programVariables.put((i), new ArrayList<Pair>());
-//        }
+
+
+        interpreter.setAllPrograms(allThePrograms);
+
+
 //
-//        interpreter.setAllPrograms(allThePrograms);
+//
+//        // Fetching the specific element from the Stack
+//        System.out.println("The element is: "
+//            + stack.get((stack.size() - pc) - 1));
 
     }
-
-
 
 
     public HashMap<Integer, Pair> getPrograms() {
@@ -95,24 +115,31 @@ public class Interpreter {
         //assign a
         //readfile b
         isRunning = true;
-        String[] terms = instruction.split("//s+");
-        int end = terms.length - 1;
+        String[] terms = instruction.split(" ");
+        int end = terms.length - 1; //"assign a 10"
         String currentInstruction = terms[end];
         while (!instructions.contains(currentInstruction)) {
-//            currentInstruction = ((Stack<String>) programs.get(id).value).peek();
             if (op1 == "" || op1.isEmpty()) {
                 op1 = currentInstruction; //op1 = userOutput
-                if (end - 1 >= 0) {
+                if (end - 1 <= terms.length - 1) {
                     currentInstruction = terms[end - 1]; //semWait
+                    end--;
                 }
             } else {
                 op2 = currentInstruction;
+                if (end - 1 <= terms.length - 1) {
+                    currentInstruction = terms[end - 1];
+                    end--;
+                }
+
             }
+
         }
         if (!op1.isEmpty() || !op2.isEmpty() || instructions.contains(currentInstruction)) {
             System.out.println("Program: " + id + " " + "Executing instruction: " + currentInstruction + "\n");
             scheduler.setCounter(scheduler.getCounter() + 1);
-            ((Stack<String>) programs.get(id).value).pop();
+            currentProgram = getTheProgram(id);
+            ((Stack<String>) currentProgram.get(4)).pop();
             String result = "";
             switch (currentInstruction) {
                 case "input":
@@ -120,14 +147,15 @@ public class Interpreter {
                     System.out.println("Please Enter Value");
                     Scanner sc = new Scanner(System.in);
                     String item = sc.next();
-                    result = ((Stack<String>) programs.get(id).value).pop(); //assing a
-                    ((Stack<String>) programs.get(id).value).push(result + " " + item);
+                    result = ((Stack<String>) currentProgram.get(4)).pop();
+                    ; //assing a
+                    ((Stack<String>) currentProgram.get(4)).push(result + " " + item);
                     op1 = "";
                     break;
 
                 case "semWait":
                     if (!mutex.semWait(op1, id, this, scheduler)) {
-                        ((Stack<String>) programs.get(id).value).push("semWait" + op1);
+                        ((Stack<String>) currentProgram.get(4)).push("semWait" + " " + op1);
                     }
                     op1 = "";
                     break;
@@ -158,8 +186,8 @@ public class Interpreter {
                 case "readFile":
                     String resultFile = readFile((String) getValueOfVariables(id, op1));
                     if (resultFile != "No File Exists") {
-                        result = ((Stack<String>) programs.get(id).value).pop();
-                        ((Stack<String>) programs.get(id).value).push(result + " " + resultFile);
+                        result = ((Stack<String>) currentProgram.get(4)).pop();
+                        ((Stack<String>) currentProgram.get(4)).push(result + " " + resultFile);
                     }
                     op1 = "";
                     break;
@@ -180,6 +208,8 @@ public class Interpreter {
                 } else if (terms[2].equals("input")) {//assign a input
                     programStack.push(terms[0] + " " + terms[1]);
                     programStack.push(terms[2]);
+                } else {
+                    programStack.push(lines[i]);
                 }
             } else {
                 programStack.push(lines[i]);
@@ -189,12 +219,34 @@ public class Interpreter {
         }
     }
 
+    public ArrayList<Object> getTheProgram(int id) {
+        for (int i = 0; i < 21; i += 20) {
+            currentProgram = (ArrayList<Object>) memory[i];
+            if (currentProgram != null) {
+                PCB pcb = (PCB) currentProgram.get(0);
+                if (pcb.getProcessID() == id) { //1 //3
+                    return currentProgram = (ArrayList<Object>) memory[i];
+                }
+            }
+        }
+        return null;
+
+    }
+
 
     private Object getValueOfVariables(int id, String variableName) {
-        ArrayList<Pair> result = programVariables.get(id);
-        for (int i = 0; i < result.size(); i++) {
-            if (result.get(i).variable.equals(variableName)) {
-                return programVariables.get(id).get(i).value;
+        int start = 1;
+        for (int i = 0; i < 21; i += 20) {
+            currentProgram = (ArrayList<Object>) memory[i];
+            PCB pcb = (PCB) currentProgram.get(0);
+            Pair pair = (Pair) currentProgram.get(1);
+            if (pcb.getProcessID() == id) {
+                while (pair.variable != variableName && start < 3) {
+                    start++;
+                    pair = (Pair) currentProgram.get(start);
+                }
+                return pair.value;
+
             }
         }
         return null;
@@ -222,6 +274,7 @@ public class Interpreter {
             }
             // delete the last new line separator
             stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+
             reader.close();
             return stringBuilder.toString();
         } catch (FileNotFoundException e) {
@@ -238,12 +291,13 @@ public class Interpreter {
             file.createNewFile();
             PrintWriter pw = new PrintWriter(file);
             pw.println(value);
-            for (int i = 0; i < programVariables.get(id).size(); i++) {
-                if (programVariables.get(id).get(i).variable.equals(filePath)) {
-                    programVariables.get(id).get(i).value = value;
-                    break;
-                }
+            getTheProgram(id);
+            int start = 1;
+            Pair pair = (Pair) currentProgram.get(start);
+            while (pair.variable != filePath && start < 3) {
+                pair = (Pair) currentProgram.get(++start);
             }
+            pair.value = value;
             pw.close();
         } catch (IOException e) {
             System.out.println("An error occurred");
@@ -261,7 +315,6 @@ public class Interpreter {
         }
         System.out.println("### Finished Executing Print From To Method###\n");
     }
-
 
 
 }

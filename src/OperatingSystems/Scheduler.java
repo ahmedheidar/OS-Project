@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Stack;
 
@@ -34,21 +35,22 @@ public class Scheduler {
         String programLength;
         int instructionSize;
         while (true) {
+
             if (time == 0) {
                 String result = interpreter.readFile(programs[0]);
                 String[] lines = result.trim().split("\\n+");
                 interpreter.getReadyQueue().add(programs[0]);
-
-
+                checkMemorySize(interpreter, 1, programs[0]);
             } else if (time == 1) {
                 interpreter.getReadyQueue().add(programs[1]);
                 String result = interpreter.readFile(programs[1]);
                 String[] lines = result.trim().split("\\n+");
-
+                checkMemorySize(interpreter, 2, programs[1]);
             } else if (time == 4) {
                 String result = interpreter.readFile(programs[2]);
                 String[] lines = result.trim().split("\\n+");
                 interpreter.getReadyQueue().add(programs[2]);
+                checkMemorySize(interpreter, 3, programs[2]);
             }
             System.out.println("Process In The Ready Queue: ");
             for (String s : interpreter.readyQueue) {
@@ -57,30 +59,87 @@ public class Scheduler {
             System.out.println();
             //TODO runProgram and see its counter
             boolean finished = false;
+            //Getting the program that is running through the PCB of the memory
+            //TODO before getting the id again, after the blocking of the program
+            //TODO we have to change the id to the program that is in the readyQueue first
+            ArrayList<Object> programRunning = interpreter.getTheProgram(id);
+            PCB pcb;
+            Stack<String> currentStack;
+            if (programRunning == null) {
+                //TODO clear the hardDisk
+                programRunning = readFromHardDisk(interpreter, "HardDisk");
+                pcb = (PCB) programRunning.get(0);
+                currentStack = (Stack<String>) programRunning.get(4);
+                PrintWriter writer = new PrintWriter("HardDisk.txt");
+                writer.print("");
+                writer.close();
+                if (interpreter.memory[0] == null) {
+                    interpreter.memory[0] = programRunning;
+                } else if (interpreter.memory[20] == null) {
+                    interpreter.memory[20] = programRunning;
+                } else {
+                    ArrayList<Object> curR = (ArrayList<Object>) interpreter.memory[0];
+                    PCB pcbOfTheMemoryProgram = (PCB) curR.get(0);
+                    if (pcbOfTheMemoryProgram.getProcessState() != State.RUNNING) {
+                        interpreter.memory[0] = null;
+                        addToHardDisk(curR);
+                        interpreter.memory[0] = programRunning;
+                    } else {
+                        curR = (ArrayList<Object>) interpreter.memory[20];
+                        pcbOfTheMemoryProgram = (PCB) curR.get(0);
+                        if (pcbOfTheMemoryProgram.getProcessState() != State.RUNNING) {
+                            interpreter.memory[20] = null;
+                            addToHardDisk(curR);
+                            interpreter.memory[20] = programRunning;
+                        }
+                    }
+
+                }
+            } else {
+                pcb = (PCB) programRunning.get(0);
+                currentStack = (Stack<String>) programRunning.get(4);
+                if (currentStack.size() == 0) {
+                    programRunning = interpreter.getTheProgram(id);
+                    pcb = (PCB) programRunning.get(0);
+                    currentStack = (Stack<String>) programRunning.get(4);
+                    pcb.setProcessState(State.READY);
+                }
+
+            }
+            if (pcb.getProcessID() != id) {
+                programRunning = (ArrayList<Object>) interpreter.memory[20];
+            }
             if (id != 0) {
-                if (Objects.equals(interpreter.getPrograms().get(id).variable, currentProgram)) {
-                    if (((Stack<String>) interpreter.programs.get(id).value).isEmpty()) {
+                if (pcb.getProcessID() == id) {
+                    if (((Stack<String>) programRunning.get(4)).isEmpty()) {
                         finished = true;
                         counter = 0;
                         interpreter.setRunning(!interpreter.isRunning());
-//                        }
                     }
 
                 }
             }
+
             if (interpreter.isRunning) {
-                id = getId(interpreter, id);
-                if (!((Stack<String>) interpreter.programs.get(id).value).isEmpty()) {
-                    interpreter.runInstruction(((Stack<String>) interpreter.programs.get(id).value).peek(), id);
+                if (!(currentStack.isEmpty())) {
+                    //Run the instruction that the pc arrow on it and increment the pc of it
+                    pcb.setProcessState(State.RUNNING);
+                    if (pcb.getProgramCounter() == 0) {
+                        //TODO after the instruction get the id of the first program in the readyQueue
+                        interpreter.runInstruction(currentStack.get((currentStack.size()) - 1), id);
+                    } else {
+                        interpreter.runInstruction(currentStack.peek(), id);
+                    }
+                    id = changePcbToBlocked(interpreter, pcb, id);
+                    pcb.setProgramCounter(pcb.getProgramCounter() + 1);
                     time++;
                 }
-
-
             }
             if (counter == quanta) {
                 interpreter.isRunning = false;
                 if (!finished) {
                     interpreter.getReadyQueue().add(currentProgram);
+                    pcb.setProcessState(State.READY);
                 }
                 currentProgram = "";
             }
@@ -88,14 +147,58 @@ public class Scheduler {
                 counter = 0;
                 currentProgram = interpreter.getReadyQueue().poll();
                 System.out.println("Current Program Running : " + currentProgram + "\n");
-                for (Integer key : interpreter.programs.keySet()) {
-                    if (interpreter.programs.get(key).variable.equals(currentProgram)) {
-                        id = key;
-                        break;
+                if (currentProgram.equals("src/Program_1")) id = 1;
+                else if (currentProgram.equals("src/Program_2")) id = 2;
+                else id = 3;
+                //TODO let the programRunning 115 lines be after inserting in the memory
+                //TODO parsing the first line in the hardDisk and will be the ID of the process
+                programRunning = interpreter.getTheProgram(id);
+                if (programRunning == null) {
+                    //TODO clear the hardDisk
+                    programRunning = readFromHardDisk(interpreter, "HardDisk");
+                    pcb = (PCB) programRunning.get(0);
+                    currentStack = (Stack<String>) programRunning.get(4);
+                    PrintWriter writer = new PrintWriter("HardDisk.txt");
+                    writer.print("");
+                    writer.close();
+                    if (interpreter.memory[0] == null) {
+                        interpreter.memory[0] = programRunning;
+                    } else if (interpreter.memory[20] == null) {
+                        interpreter.memory[20] = programRunning;
+                    } else {
+                        ArrayList<Object> curR = (ArrayList<Object>) interpreter.memory[0];
+                        PCB pcbOfTheMemoryProgram = (PCB) curR.get(0);
+                        if (pcbOfTheMemoryProgram.getProcessState() != State.RUNNING) {
+                            interpreter.memory[0] = null;
+                            addToHardDisk(curR);
+                            interpreter.memory[0] = programRunning;
+                        } else {
+                            curR = (ArrayList<Object>) interpreter.memory[20];
+                            pcbOfTheMemoryProgram = (PCB) curR.get(0);
+                            if (pcbOfTheMemoryProgram.getProcessState() != State.RUNNING) {
+                                interpreter.memory[20] = null;
+                                addToHardDisk(curR);
+                                interpreter.memory[20] = programRunning;
+                            }
+                        }
+
                     }
+
+
+                } else {
+                    pcb = (PCB) programRunning.get(0);
+                    currentStack = (Stack<String>) programRunning.get(4);
                 }
-                if (!((Stack<String>) interpreter.programs.get(id).value).isEmpty()) {
-                    interpreter.runInstruction(((Stack<String>) interpreter.programs.get(id).value).peek(), id);
+                if (!(currentStack.isEmpty())) {
+                    pcb.setProcessState(State.RUNNING);
+                    if (pcb.getProgramCounter() == 0) {
+                        interpreter.runInstruction(currentStack.get((currentStack.size()) - 1), id);
+                    } else {
+                        interpreter.runInstruction(currentStack.peek(), id);
+                    }
+                    //TODO change the pcbState with Blocked after executing its instruction if its blocked state
+                    id = changePcbToBlocked(interpreter, pcb, id);
+                    pcb.setProgramCounter(pcb.getProgramCounter() + 1);
                     time++;
                 }
             }
@@ -121,54 +224,87 @@ public class Scheduler {
         System.out.println(time);
     }
 
+    private int changePcbToBlocked(Interpreter interpreter, PCB pcb, int id) {
+        String progNameNow;
+        if (pcb.getProcessID() == 1) progNameNow = "src/Program_1";
+        else if (pcb.getProcessID() == 2) progNameNow = "src/Program_2";
+        else progNameNow = "src/Program_3";
+        if (interpreter.blockedQueue.contains(progNameNow)) {
+            pcb.setProcessState(State.BLOCKED);
+            id = getIdProgram(interpreter, id);
+        }
+        return id;
+
+    }
+
+    private int getIdProgram(Interpreter interpreter, int id) {
+        if (!interpreter.readyQueue.isEmpty()) {
+            if (interpreter.readyQueue.peek().equals("src/Program_1")) id = 1;
+            else if (interpreter.readyQueue.peek().equals("src/Program_2")) id = 2;
+            else id = 3;
+        }
+        return id;
+    }
+
     private void checkMemorySize(Interpreter interpreter, int id, String program) throws IOException {
         String result = interpreter.readFile(program);
         String[] lines = result.trim().split("\\n+");
         Stack<String> programInstructions = new Stack<>();
         interpreter.reverseStack(lines, id, programInstructions);
         ArrayList<Object> programDetails = new ArrayList<>();
-        if (interpreter.memory[0] != (Integer) 0 && interpreter.memory[20] != (Integer) 0) {
+        if (interpreter.memory[0] != null && interpreter.memory[20] != null) {
             ArrayList<Object> currentProgram = (ArrayList<Object>) interpreter.memory[0];
+            System.out.println(currentProgram);
             PCB pcb = (PCB) currentProgram.get(0);
             if (pcb.getProcessState() != State.RUNNING) {
-                interpreter.memory[0] = 0;
-            }
-
-
-        } else {
-            if (interpreter.memory[0] == (Integer) 0) {
-                programDetails.add(new PCB(id, State.READY, 1, new int[]{0, 19}));
-                programDetails.add(new Pair("x", null));
-                programDetails.add(new Pair("y", null));
-                programDetails.add(new Pair("z", null));
-                programDetails.add(programInstructions);
+                interpreter.memory[0] = null; //will remove the currentProgram and add it to the harddisk
+                addToHardDisk(currentProgram);
+                programDetails.add(new PCB(id, State.READY, 0, new int[]{0, 19}));
+                addProgramVariables(programDetails, programInstructions);
                 interpreter.memory[0] = programDetails;
-            } else if (interpreter.memory[20] == (Integer) 0) {
-                programDetails.add(new PCB(id, State.READY, 1, new int[]{20, 39}));
-                programDetails.add(new Pair("x", null));
-                programDetails.add(new Pair("y", null));
-                programDetails.add(new Pair("z", null));
-                programDetails.add(programInstructions);
+
+
+            } else {
+                currentProgram = (ArrayList<Object>) interpreter.memory[20];
+                pcb = (PCB) currentProgram.get(0);
+                if (pcb.getProcessState() != State.RUNNING) {
+                    interpreter.memory[20] = null;
+                    addToHardDisk(currentProgram);
+                    programDetails.add(new PCB(id, State.READY, 0, new int[]{0, 19}));
+                    addProgramVariables(programDetails, programInstructions);
+                    interpreter.memory[20] = programDetails;
+
+
+                }
+            }
+        } else {
+            if (interpreter.memory[0] == null) {
+                programDetails.add(new PCB(id, State.READY, 0, new int[]{0, 19}));
+                addProgramVariables(programDetails, programInstructions);
+                interpreter.memory[0] = programDetails;
+            } else if (interpreter.memory[20] == null) {
+                programDetails.add(new PCB(id, State.READY, 0, new int[]{20, 39}));
+                addProgramVariables(programDetails, programInstructions);
                 interpreter.memory[20] = programDetails;
             }
         }
 
-
     }
 
-    public int getId(Interpreter interpreter, int id) {
-        for (Integer key : interpreter.programs.keySet()) {
-            if (interpreter.programs.get(key).variable.equals(currentProgram)) {
-                id = key;
-                break;
-            }
-        }
-        return id;
+    private void addProgramVariables(ArrayList<Object> programDetails, Stack<String> programInstructions) {
+        programDetails.add(new Pair(null, null));
+        programDetails.add(new Pair(null, null));
+        programDetails.add(new Pair(null, null));
+        programDetails.add(programInstructions);
     }
+
 
     public ArrayList<Object> readFromHardDisk(Interpreter interpreter, String program) throws IOException {
         String result = interpreter.readFile(program);
         String lines[] = result.split("\\r?\\n");
+        if (lines[0].equals("No")) {
+            return null;
+        }
         int start = 0;
         String[] linesToSplit;
         Stack<String> originalStack = new Stack<>();
@@ -203,84 +339,50 @@ public class Scheduler {
     }
 
 
-
     public static void addToHardDisk(ArrayList<Object> program) throws IOException {
-        String s = convertPCB(program)+convertVariables(program)+convertInstructions(program);
+        String s = convertPCB(program) + convertVariables(program) + convertInstructions(program);
         writeToHardDisk(s);
     }
+
     public static void writeToHardDisk(String program) throws IOException {
         try {
-            String data = program+"\n";
+            String data = program + "\n";
             File f1 = new File("HardDisk.txt");
-            if(!f1.exists()) {
+            if (!f1.exists()) {
                 f1.createNewFile();
             }
-            FileWriter fileWritter = new FileWriter(f1.getName(),true);
+            FileWriter fileWritter = new FileWriter(f1.getName(), true);
             BufferedWriter bw = new BufferedWriter(fileWritter);
             bw.write(data);
             bw.close();
             System.out.println("Done");
-        } catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static String convertPCB(ArrayList<Object> program){
+    public static String convertPCB(ArrayList<Object> program) {
         PCB p = (PCB) (program).get(0);
-        return p.getProcessID()+" "+ p.getProcessState()+" " + p.getProgramCounter()+" " + String.valueOf(p.memoryBoundaries[0])+" "+String.valueOf(p.memoryBoundaries[1])+"\n";
+        return p.getProcessID() + " " + p.getProcessState() + " " + p.getProgramCounter() + " " + String.valueOf(p.memoryBoundaries[0]) + " " + String.valueOf(p.memoryBoundaries[1]) + "\n";
     }
 
-    public static String convertVariables(ArrayList<Object> program){
+    public static String convertVariables(ArrayList<Object> program) {
         Pair pair1 = (Pair) program.get(1);
         Pair pair2 = (Pair) program.get(2);
         Pair pair3 = (Pair) program.get(3);
-        String s1 = pair1.variable+" "+pair1.value+"\n";
-        String s2 = pair2.variable+" "+pair2.value+"\n";
-        String s3 = pair3.variable+" "+pair3.value+"\n";
-        return s1+s2+s3;
-
+        String s1 = pair1.variable + " " + pair1.value + "\n";
+        String s2 = pair2.variable + " " + pair2.value + "\n";
+        String s3 = pair3.variable + " " + pair3.value + "\n";
+        return s1 + s2 + s3;
     }
+
     public static String convertInstructions(ArrayList<Object> program) {
         Stack instructions = (Stack) program.get(4);
         String s = "";
-        for (Object instruction:instructions) {
-            s = instruction+"\n" +s;
+        for (Object instruction : instructions) {
+            s = instruction + "\n" + s;
         }
         return s.toString();
-    }
-
-
-
-    public static void main(String[] args) throws IOException {
-        PCB p = new PCB(1,State.READY,5,new int[]{1,10});
-        String pcb  = p.getProcessID()+" "+ p.getProcessState()+" " + p.getProgramCounter()+" " + String.valueOf(p.memoryBoundaries[0])+" "+String.valueOf(p.memoryBoundaries[1]);
-//        System.out.println(pcb);
-        String s ="semWait userInput\n" +
-                "assign a input\n" +
-                "assign b input\n" +
-                "semSignal userInput\n" +
-                "semWait file\n" +
-                "writeFile a b\n" +
-                "semSignal file\n" +
-                "\n";
-        Interpreter interpreter =  new Interpreter(1);
-        String[] lines = s.trim().split("\\n+");
-        Stack<String> programInstructions = new Stack<>();
-//        interpreter.reverseStack(lines, 1, programInstructions);
-        programInstructions.push("assign a");
-        programInstructions.push("input");
-        programInstructions.push("semWait userSignal");
-        ArrayList<Object> programDetails = new ArrayList<>();
-        programDetails.add(new PCB(1, State.READY, 1, new int[]{0, 19}));
-        programDetails.add(new Pair("x", null));
-        programDetails.add(new Pair("y", null));
-        programDetails.add(new Pair("z", null));
-        programDetails.add(programInstructions);
-        for (Object o:programDetails) {
-            System.out.println(o.toString());
-        }
-        addToHardDisk(programDetails);
-
     }
 
 }
